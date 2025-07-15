@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InsightEd</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>InsightEd</h1>
+        <nav>
+            <a href="#home">Home</a>
+            <a href="#upload">Upload PDF</a>
+            <a href="#generate">Generate</a>
+            <a href="#quiz-section">Quiz</a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home" class="hero-section">
+            <h2>Welcome to InsightEd!</h2>
+            <p>Your intelligent learning companion. InsightEd helps you quickly grasp complex information by summarizing your PDF documents and testing your knowledge with custom-generated quizzes.</p>
+            <p>Upload your study materials, get instant summaries, and challenge yourself with interactive quizzes tailored to your content. Master your subjects with ease!</p>
+        </section>
+
+        <section id="upload" class="section-container">
+            <h2>Upload Your PDF</h2>
+            <div class="upload-area">
+                <input type="file" id="pdfUpload" accept=".pdf">
+                <button id="uploadButton">Upload PDF</button>
+            </div>
+            <p id="uploadStatus" class="status-message"></p>
+        </section>
+
+        <section id="generate" class="section-container">
+            <h2>Generate Summary or Quiz</h2>
+            <div class="generate-options">
+                <label for="uploadedFilename">Select Uploaded File:</label>
+                <select id="uploadedFilename">
+                    </select>
+                
+                <button id="summarizeButton">Generate Summary</button>
+                <div id="summaryResult" class="result-box hidden">
+                    <h3>Summary:</h3>
+                    <div id="summaryContent" class="content-display"></div>
+                </div>
+
+                <hr>
+
+                <h3>Generate Quiz</h3>
+                <label for="numQuestions">Number of Questions:</label>
+                <input type="number" id="numQuestions" min="1" value="5">
+                <button id="generateQuizButton">Generate Quiz</button>
+                <p id="quizGenerationStatus" class="status-message"></p>
+            </div>
+        </section>
+
+        <section id="quiz-section" class="section-container hidden">
+            <h2>Take the Quiz!</h2>
+            <div id="quizContainer">
+                </div>
+            <button id="submitQuizButton" class="hidden">Submit Quiz</button>
+            <button id="startNewQuizButton" class="hidden">Start New Quiz</button>
+        </section>
+
+        <section id="quiz-analysis" class="section-container hidden">
+            <h2>Quiz Analysis</h2>
+            <div id="analysisResult">
+                <h3>Your Score: <span id="scoreDisplay"></span></h3>
+                <div id="correctAnswers">
+                    <h4>Correct Answers:</h4>
+                    <ul id="correctList"></ul>
+                </div>
+                <div id="incorrectAnswers">
+                    <h4>Incorrect Answers:</h4>
+                    <ul id="incorrectList"></ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 InsightEd. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

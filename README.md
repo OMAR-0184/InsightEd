@@ -1,8 +1,5 @@
 # InsightEd 📚✨
 
-[![GitHub last commit](https://img.shields.io/github/last-commit/[YourGitHubUsername]/InsightEd?style=for-the-badge)](https://github.com/[YourGitHubUsername]/InsightEd)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
-[![Tech Stack](https://img.shields.io/badge/Tech%20Stack-FastAPI%20%7C%20HTML%2FCSS%2FJS%20%7C%20Docker-green.svg?style=for-the-badge)](README.md#tech-stack)
 
 ## Table of Contents
 

@@ -27,6 +27,23 @@ InsightEd is an innovative educational application designed to transform how use
 
 The project is structured into two core components: a high-performance FastAPI backend responsible for handling AI processing, file management, and API endpoints, and a lightweight, responsive static HTML/CSS/JavaScript frontend for an intuitive user experience. The entire application is orchestrated using Docker, ensuring a consistent and straightforward setup process across various development and deployment environments.
 
+##UI
+<img width="1440" height="843" alt="Screenshot 2025-07-16 at 12 35 11 AM" src="https://github.com/user-attachments/assets/f9f0878a-8df1-4004-9faa-5e45432d5c42" />
+
+
+
+
+<img width="1440" height="571" alt="Screenshot 2025-07-16 at 12 35 39 AM" src="https://github.com/user-attachments/assets/1e69ee6d-74a4-4ce6-89f3-63c20734b8d3" />
+
+
+
+<img width="1438" height="846" alt="Screenshot 2025-07-16 at 12 37 26 AM" src="https://github.com/user-attachments/assets/18a09a92-777b-480b-86fb-403bf407deea" />
+
+
+
+
+
+
 ### Key Features:
 
 * **PDF Document Upload:** Securely upload various PDF documents to the backend for processing.

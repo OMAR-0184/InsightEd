@@ -1,6 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Define your backend API's base URL here
-    // IMPORTANT: Make sure this matches the address and port where your FastAPI server is running
     const API_BASE_URL = 'http://127.0.0.1:8000'; // Set the base URL for your FastAPI backend
 
     const uploadInput = document.getElementById('pdfUpload');

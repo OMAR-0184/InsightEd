@@ -78,7 +78,7 @@ The project is structured into two core components: a high-performance FastAPI b
 * **FastAPI:** Modern, fast (high-performance) web framework for building APIs.
 * **Uvicorn:** ASGI server, powering the FastAPI application.
 * **LangChain:** Framework for developing applications with LLMs, enabling complex prompt engineering and data interaction.
-* **`langchain-google-genai`:** Specific integration for leveraging Google's Gemini Pro model within LangChain.
+* **`langchain-google-genai`:** Specific integration for leveraging Google's Gemini 2.5 flash model within LangChain.
 * **`PyPDFLoader`:** Utilized for efficient loading and parsing of PDF documents.
 * **`python-dotenv`:** For secure management and loading of environment variables (e.g., API keys).
 

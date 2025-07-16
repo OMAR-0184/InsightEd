@@ -1,6 +1,12 @@
 # InsightEd 📚✨
 
 
+Frontend:  https://omar-0184.github.io/InsightEd/
+
+FastAPI docs :  https://insighted.onrender.com/docs
+
+
+
 ## Table of Contents
 
 -   [About The Project](#about-the-project)

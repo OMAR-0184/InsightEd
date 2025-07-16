@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const API_BASE_URL = 'http://127.0.0.1:8000'; // Set the base URL for your FastAPI backend
+    const API_BASE_URL = 'https://insighted.onrender.com'; // Set the base URL for your FastAPI backend
 
     const uploadInput = document.getElementById('pdfUpload');
     const uploadButton = document.getElementById('uploadButton');

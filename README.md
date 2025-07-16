@@ -1,7 +1,7 @@
 # InsightEd 📚✨
 
 
-Frontend:  https://omar-0184.github.io/InsightEd/
+Frontend:  https://insight-ed-pink.vercel.app
 
 FastAPI docs :  https://insighted.onrender.com/docs
 

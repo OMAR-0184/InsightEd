@@ -23,7 +23,7 @@ embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_a
 
 
 def get_document_chunks(docs):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=400)
     chunks = text_splitter.split_documents(docs)
     return chunks
 

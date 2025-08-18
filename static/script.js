@@ -1,5 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const API_BASE_URL = 'https://insighted.onrender.com'; // Set the base URL for your FastAPI backend
+    const API_BASE_URL = 'https://insighted.onrender.com';
+
+
+    const loadingOverlay = document.getElementById('loading-overlay');
+    
+
+    const loadingAnimation = lottie.loadAnimation({
+        container: document.getElementById('loading'),
+        renderer: 'svg',
+        loop: true,
+        autoplay: false,
+        path: 'https://lottie.host/e09d1185-d667-4257-8f24-00cd6d2a5db0/T05HDpjup5.json' 
+    });
 
     const uploadInput = document.getElementById('pdfUpload');
     const uploadButton = document.getElementById('uploadButton');
@@ -10,326 +22,336 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryContent = document.getElementById('summaryContent');
     const numQuestionsInput = document.getElementById('numQuestions');
     const generateQuizButton = document.getElementById('generateQuizButton');
-    const quizGenerationStatus = document.getElementById('quizGenerationStatus');
-    const quizSection = document.getElementById('quiz-section');
-    const quizContainer = document.getElementById('quizContainer');
-    const submitQuizButton = document.getElementById('submitQuizButton');
-    const startNewQuizButton = document.getElementById('startNewQuizButton');
-    const quizAnalysisSection = document.getElementById('quiz-analysis');
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const correctList = document.getElementById('correctList');
-    const incorrectList = document.getElementById('incorrectList');
+    const controls = document.getElementById('controls');
 
-    let currentQuizData = []; // To store the quiz questions and answers
-    let selectedFilename = ''; // To store the currently selected filename
+    // Quiz Modal Elements
+    const quizModal = document.getElementById('quiz-modal');
+    const quizModalTitle = document.getElementById('quiz-modal-title');
+    const quizContainer = document.getElementById('quiz-container');
+    const prevQuestionBtn = document.getElementById('prev-question');
+    const nextQuestionBtn = document.getElementById('next-question');
+    const submitQuizBtn = document.getElementById('submit-quiz');
+    const questionCounter = document.getElementById('question-counter');
+    const closeQuizBtn = document.getElementById('close-quiz');
+    const quizResults = document.getElementById('quiz-results');
+    const scoreDisplay = document.getElementById('score');
+    const timerElement = document.getElementById('timer');
+    const timeTakenElement = document.getElementById('timeTaken');
+    const quizAnalysisDetails = document.getElementById('quiz-analysis-details');
 
-    // Function to fetch uploaded files and populate the dropdown
-    async function fetchUploadedFiles() {
-        try {
-            // In a real application, you'd have an endpoint to list uploaded files.
-            // For this example, we'll assume the client "remembers" uploaded files
-            // or the server provides a way to list them.
-            // For now, we'll just populate it if a file was just uploaded.
-            // A more robust solution would involve a backend endpoint that lists files in UPLOAD_DIR.
-            // Since there's no backend endpoint to list files, we'll manually add the last uploaded file.
-            // This is a simplification for demonstration.
-            if (localStorage.getItem('uploadedFiles')) {
-                const files = JSON.parse(localStorage.getItem('uploadedFiles'));
-                uploadedFilenameSelect.innerHTML = ''; // Clear previous options
-                if (files.length === 0) {
-                    const option = document.createElement('option');
-                    option.value = '';
-                    option.textContent = 'No files uploaded yet.';
-                    option.disabled = true;
-                    option.selected = true;
-                    uploadedFilenameSelect.appendChild(option);
-                    summarizeButton.disabled = true;
-                    generateQuizButton.disabled = true;
-                } else {
-                    files.forEach(filename => {
-                        const option = document.createElement('option');
-                        option.value = filename;
-                        option.textContent = filename;
-                        uploadedFilenameSelect.appendChild(option);
-                    });
-                    uploadedFilenameSelect.selectedIndex = 0; // Select the first one
-                    selectedFilename = uploadedFilenameSelect.value;
-                    summarizeButton.disabled = false;
-                    generateQuizButton.disabled = false;
-                }
-            } else {
-                uploadedFilenameSelect.innerHTML = '<option value="" disabled selected>No files uploaded yet.</option>';
-                summarizeButton.disabled = true;
-                generateQuizButton.disabled = true;
-            }
-        } catch (error) {
-            console.error('Error fetching uploaded files:', error);
-            uploadedFilenameSelect.innerHTML = '<option value="" disabled selected>Error loading files.</option>';
-        }
-    }
+    // Quiz State
+    let currentQuizData = [];
+    let userAnswers = [];
+    let currentQuestionIndex = 0;
+    let quizTimer;
+    let startTime;
+    let resultsChart;
 
-    // Call this on page load
-    fetchUploadedFiles();
-
-    uploadedFilenameSelect.addEventListener('change', (event) => {
-        selectedFilename = event.target.value;
-    });
-
-    uploadButton.addEventListener('click', async () => {
+    uploadButton.addEventListener('click', () => uploadInput.click());
+    
+    uploadInput.addEventListener('change', async () => {
         const file = uploadInput.files[0];
-        if (!file) {
-            uploadStatus.textContent = "Please select a PDF file.";
-            uploadStatus.className = "status-message error";
-            return;
-        }
+        if (!file) return;
 
         const formData = new FormData();
         formData.append('file', file);
 
-        uploadStatus.textContent = "Uploading file...";
-        uploadStatus.className = "status-message";
+        uploadStatus.textContent = "Uploading...";
+        loadingOverlay.classList.remove('hidden');
+        loadingAnimation.play();
 
         try {
-            // MODIFIED: Use API_BASE_URL for the fetch call
             const response = await fetch(`${API_BASE_URL}/upload/`, {
                 method: 'POST',
                 body: formData
             });
-
             const result = await response.json();
 
             if (response.ok) {
-                uploadStatus.textContent = `File "${result.filename}" uploaded successfully!`;
-                uploadStatus.className = "status-message success";
-                // Add the new file to local storage and update dropdown
+                uploadStatus.textContent = `Successfully uploaded ${result.filename}`;
                 let uploadedFiles = JSON.parse(localStorage.getItem('uploadedFiles')) || [];
                 if (!uploadedFiles.includes(result.filename)) {
                     uploadedFiles.push(result.filename);
                     localStorage.setItem('uploadedFiles', JSON.stringify(uploadedFiles));
                 }
-                await fetchUploadedFiles(); // Re-populate dropdown to include the new file
-                uploadedFilenameSelect.value = result.filename; // Select the newly uploaded file
-                selectedFilename = result.filename;
-
+                updateFileDropdown();
+                uploadedFilenameSelect.value = result.filename;
+                controls.classList.remove('hidden');
             } else {
                 uploadStatus.textContent = `Error: ${result.detail || 'Upload failed'}`;
-                uploadStatus.className = "status-message error";
             }
         } catch (error) {
             uploadStatus.textContent = `Network error: ${error.message}`;
-            uploadStatus.className = "status-message error";
-            console.error('Upload error:', error);
+        } finally {
+            loadingOverlay.classList.add('hidden');
+            loadingAnimation.stop();
         }
     });
 
-    summarizeButton.addEventListener('click', async () => {
-        if (!selectedFilename) {
-            summaryResult.classList.add('hidden');
-            alert("Please select an uploaded PDF file first.");
-            return;
+    function updateFileDropdown() {
+        const files = JSON.parse(localStorage.getItem('uploadedFiles')) || [];
+        uploadedFilenameSelect.innerHTML = '';
+        if (files.length > 0) {
+            files.forEach(filename => {
+                const option = document.createElement('option');
+                option.value = filename;
+                option.textContent = filename;
+                uploadedFilenameSelect.appendChild(option);
+            });
+            controls.classList.remove('hidden');
         }
+    }
 
-        summaryContent.innerHTML = 'Generating summary...';
-        summaryResult.classList.remove('hidden');
-        summarizeButton.disabled = true;
+    summarizeButton.addEventListener('click', async () => {
+        const filename = uploadedFilenameSelect.value;
+        if (!filename) return;
+
+        summaryResult.classList.add('hidden'); 
+        summaryContent.innerHTML = ''; 
+        loadingOverlay.classList.remove('hidden');
+        loadingAnimation.play();
 
         try {
-            // MODIFIED: Use API_BASE_URL for the fetch call
             const response = await fetch(`${API_BASE_URL}/generate/summary/`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ filename: selectedFilename })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename })
             });
-
             const result = await response.json();
 
             if (response.ok) {
-                summaryContent.textContent = result.summary;
+                // First, replace markdown bold with <strong> tags
+                const boldedText = result.summary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                // Then, replace newlines with <br> tags
+                summaryContent.innerHTML = boldedText.replace(/\n/g, '<br>');
             } else {
                 summaryContent.textContent = `Error: ${result.detail || 'Summary generation failed'}`;
-                summaryResult.classList.add('error-message');
             }
         } catch (error) {
             summaryContent.textContent = `Network error: ${error.message}`;
-            summaryResult.classList.add('error-message');
-            console.error('Summary generation error:', error);
         } finally {
-            summarizeButton.disabled = false;
+            loadingOverlay.classList.add('hidden');
+            loadingAnimation.stop();
+            summaryResult.classList.remove('hidden');
         }
     });
 
     generateQuizButton.addEventListener('click', async () => {
-        if (!selectedFilename) {
-            quizGenerationStatus.textContent = "Please select an uploaded PDF file first.";
-            quizGenerationStatus.className = "status-message error";
-            return;
-        }
-
+        const filename = uploadedFilenameSelect.value;
         const num = parseInt(numQuestionsInput.value, 10);
-        if (isNaN(num) || num <= 0) {
-            quizGenerationStatus.textContent = "Please enter a valid number of questions (greater than 0).";
-            quizGenerationStatus.className = "status-message error";
-            return;
-        }
+        if (!filename || isNaN(num) || num <= 0) return;
 
-        quizGenerationStatus.textContent = "Generating quiz questions...";
-        quizGenerationStatus.className = "status-message";
-        generateQuizButton.disabled = true;
-        quizSection.classList.add('hidden'); // Hide quiz section during generation
-        quizAnalysisSection.classList.add('hidden'); // Hide analysis section
+        loadingOverlay.classList.remove('hidden');
+        loadingAnimation.play();
 
         try {
-            // MODIFIED: Use API_BASE_URL for the fetch call
             const response = await fetch(`${API_BASE_URL}/generate/quiz/`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ filename: selectedFilename, num: num })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename, num })
             });
-
             const result = await response.json();
 
-            if (response.ok) {
+            if (response.ok && result.questions && result.questions.length > 0) {
                 currentQuizData = result.questions;
-                if (currentQuizData && currentQuizData.length > 0) {
-                    quizGenerationStatus.textContent = "Quiz generated successfully!";
-                    quizGenerationStatus.className = "status-message success";
-                    displayQuiz();
-                    quizSection.classList.remove('hidden');
-                    submitQuizButton.classList.remove('hidden');
-                    startNewQuizButton.classList.add('hidden'); // Hide "Start New Quiz" initially
-                } else {
-                    quizGenerationStatus.textContent = "No questions generated. The model might not have found enough content.";
-                    quizGenerationStatus.className = "status-message error";
-                }
+                userAnswers = new Array(currentQuizData.length).fill(null);
+                startQuiz();
             } else {
-                quizGenerationStatus.textContent = `Error: ${result.detail || 'Quiz generation failed'}`;
-                quizGenerationStatus.className = "status-message error";
-                currentQuizData = []; // Clear quiz data on error
+                alert('Failed to generate quiz. Please try again.');
             }
         } catch (error) {
-            quizGenerationStatus.textContent = `Network error: ${error.message}`;
-            quizGenerationStatus.className = "status-message error";
-            console.error('Quiz generation error:', error);
-            currentQuizData = []; // Clear quiz data on error
+            alert(`Network error: ${error.message}`);
         } finally {
-            generateQuizButton.disabled = false;
+            loadingOverlay.classList.add('hidden');
+            loadingAnimation.stop();
         }
     });
 
-    function displayQuiz() {
-        quizContainer.innerHTML = ''; // Clear previous quiz
-        currentQuizData.forEach((q, index) => {
-            const questionDiv = document.createElement('div');
-            questionDiv.classList.add('quiz-question');
-            // Ensure q.Options is an array and has at least 4 elements before accessing them
-            const option0 = q.Options && q.Options[0] !== undefined ? q.Options[0] : 'N/A';
-            const option1 = q.Options && q.Options[1] !== undefined ? q.Options[1] : 'N/A';
-            const option2 = q.Options && q.Options[2] !== undefined ? q.Options[2] : 'N/A';
-            const option3 = q.Options && q.Options[3] !== undefined ? q.Options[3] : 'N/A';
-
-            questionDiv.innerHTML = `
-                <p>Q${index + 1}: ${q.Question}</p>
-                <div class="quiz-options">
-                    <label>
-                        <input type="radio" name="question${index}" value="${option0}"> ${option0}
-                    </label>
-                    <label>
-                        <input type="radio" name="question${index}" value="${option1}"> ${option1}
-                    </label>
-                    <label>
-                        <input type="radio" name="question${index}" value="${option2}"> ${option2}
-                    </label>
-                    <label>
-                        <input type="radio" name="question${index}" value="${option3}"> ${option3}
-                    </label>
-                </div>
-            `;
-            quizContainer.appendChild(questionDiv);
-        });
+    function startQuiz() {
+        currentQuestionIndex = 0;
+        quizModalTitle.textContent = "Quiz Time!";
+        timerElement.classList.remove('hidden');
+        quizResults.classList.add('hidden');
+        quizContainer.classList.remove('hidden');
+        document.getElementById('quiz-navigation').classList.remove('hidden');
+        quizModal.classList.remove('hidden');
+        displayQuestion();
+        
+        const quizDuration = currentQuizData.length * 120;
+        startTime = new Date();
+        startTimer(quizDuration);
     }
+    
+    function startTimer(duration) {
+        let timer = duration, minutes, seconds;
+        clearInterval(quizTimer);
 
-    submitQuizButton.addEventListener('click', () => {
+        quizTimer = setInterval(() => {
+            minutes = parseInt(timer / 60, 10);
+            seconds = parseInt(timer % 60, 10);
+
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+
+            timerElement.textContent = minutes + ":" + seconds;
+
+            if (--timer < 0) {
+                clearInterval(quizTimer);
+                alert("Time's up!");
+                submitQuiz();
+            }
+        }, 1000);
+    }
+    
+    function submitQuiz() {
+        clearInterval(quizTimer);
+        const endTime = new Date();
+        const timeDiffSeconds = Math.round((endTime - startTime) / 1000);
+        const minutes = Math.floor(timeDiffSeconds / 60);
+        const seconds = timeDiffSeconds % 60;
+        timeTakenElement.textContent = `${minutes}m ${seconds}s`;
+
         let score = 0;
-        const userAnswers = [];
-        correctList.innerHTML = '';
-        incorrectList.innerHTML = '';
-
-        currentQuizData.forEach((q, index) => {
-            const selectedOption = document.querySelector(`input[name="question${index}"]:checked`);
-            const userAnswer = selectedOption ? selectedOption.value : null;
-            // Handle cases where q.Answer might be missing or null
-            const correctAnswer = q.Answer !== undefined && q.Answer !== null ? String(q.Answer) : 'N/A';
-            const isCorrect = userAnswer === correctAnswer;
-
-            userAnswers.push({
-                question: q.Question,
-                userAnswer: userAnswer,
-                correctAnswer: correctAnswer,
-                isCorrect: isCorrect,
-                description: q.Description || 'No description provided.' // Provide a default if missing
-            });
-
-            if (isCorrect) {
+        userAnswers.forEach((answer, index) => {
+            if (answer === currentQuizData[index].Answer) {
                 score++;
             }
         });
 
-        displayQuizAnalysis(score, userAnswers);
-        quizSection.classList.add('hidden');
-        quizAnalysisSection.classList.remove('hidden');
-        submitQuizButton.classList.add('hidden');
-        startNewQuizButton.classList.remove('hidden'); // Show "Start New Quiz" button
-    });
-
-    function displayQuizAnalysis(score, userAnswers) {
         scoreDisplay.textContent = `${score} / ${currentQuizData.length}`;
+        quizModalTitle.textContent = "Quiz Results";
+        timerElement.classList.add('hidden');
+        quizContainer.classList.add('hidden');
+        document.getElementById('quiz-navigation').classList.add('hidden');
+        quizResults.classList.remove('hidden');
+        
+        displayResultsChart(score, currentQuizData.length);
+        displayAnswerAnalysis();
+    }
 
-        userAnswers.forEach((answer, index) => {
-            const listItem = document.createElement('li');
-            listItem.innerHTML = `<strong>Q${index + 1}:</strong> ${answer.question}<br>
-                                  <strong>Your Answer:</strong> ${answer.userAnswer || 'Not answered'}<br>
-                                  <strong>Correct Answer:</strong> ${answer.correctAnswer}<br>
-                                  <strong>Description:</strong> ${answer.description}`;
+    function displayAnswerAnalysis() {
+        quizAnalysisDetails.innerHTML = '';
+        let analysisHTML = '<h3 class="text-2xl font-bold mb-4 mt-6 text-white">Answer Breakdown</h3>';
 
-            if (answer.isCorrect) {
-                listItem.style.color = '#28a745'; // Green
-                correctList.appendChild(listItem);
-            } else {
-                listItem.style.color = '#dc3545'; // Red
-                incorrectList.appendChild(listItem);
+        currentQuizData.forEach((question, index) => {
+            const userAnswer = userAnswers[index] || "Not Answered";
+            const isCorrect = userAnswer === question.Answer;
+            
+            analysisHTML += `
+                <div class="p-4 mb-4 rounded-lg ${isCorrect ? 'bg-green-300' : 'bg-red-300'}">
+                    <p class="font-bold text-black">${index + 1}. ${question.Question}</p>
+                    <p class="text-gray-800">Your Answer: <span class="font-semibold ${isCorrect ? 'text-green-800' : 'text-red-800'}">${userAnswer}</span></p>
+                    <p class="text-gray-800">Correct Answer: <span class="font-semibold text-green-800">${question.Answer}</span></p>
+                    <p class="mt-2 text-sm text-gray-700"><em>${question.Description}</em></p>
+                </div>
+            `;
+        });
+        
+        quizAnalysisDetails.innerHTML = analysisHTML;
+    }
+    
+    function displayResultsChart(correct, total) {
+        const incorrect = total - correct;
+        const ctx = document.getElementById('resultsChart').getContext('2d');
+        
+        if (resultsChart) {
+            resultsChart.destroy();
+        }
+
+        Chart.defaults.color = '#d1d5db'; 
+
+        resultsChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Correct', 'Incorrect'],
+                datasets: [{
+                    data: [correct, incorrect],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(239, 68, 68, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(16, 185, 129, 1)',
+                        'rgba(239, 68, 68, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    animateScale: true,
+                    animateRotate: true
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#d1d5db'
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Quiz Performance',
+                        color: '#ffffff'
+                    }
+                }
             }
         });
     }
 
-    startNewQuizButton.addEventListener('click', () => {
-        // Reset the UI to allow generating a new quiz
-        quizAnalysisSection.classList.add('hidden');
-        quizSection.classList.add('hidden');
-        quizContainer.innerHTML = ''; // Clear previous quiz display
-        quizGenerationStatus.textContent = ''; // Clear status message
-        submitQuizButton.classList.add('hidden');
-        startNewQuizButton.classList.add('hidden'); // Hide itself
-        numQuestionsInput.value = 5; // Reset number of questions input
-        // Re-enable generate quiz button if needed
-        generateQuizButton.disabled = false;
-        // Also clear previous analysis results
-        correctList.innerHTML = '';
-        incorrectList.innerHTML = '';
-        scoreDisplay.textContent = '';
+    submitQuizBtn.addEventListener('click', submitQuiz);
+
+    closeQuizBtn.addEventListener('click', () => {
+        quizModal.classList.add('hidden');
+        clearInterval(quizTimer);
     });
 
-    // Smooth scrolling for navigation
-    document.querySelectorAll('nav a').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
+    function displayQuestion() {
+        const question = currentQuizData[currentQuestionIndex];
+        quizContainer.innerHTML = `
+            <h3 class="text-xl font-semibold mb-4 text-white">${question.Question}</h3>
+            <div>
+                ${question.Options.map(option => `
+                    <label class="quiz-option ${userAnswers[currentQuestionIndex] === option ? 'selected' : ''}">
+                        <input type="radio" name="option" value="${option}" class="hidden">
+                        <span>${option}</span>
+                    </label>
+                `).join('')}
+            </div>
+        `;
+        updateQuizNavigation();
 
-            document.querySelector(this.getAttribute('href')).scrollIntoView({
-                behavior: 'smooth'
+        document.querySelectorAll('.quiz-option').forEach(el => {
+            el.addEventListener('click', () => {
+                userAnswers[currentQuestionIndex] = el.querySelector('input').value;
+                document.querySelectorAll('.quiz-option').forEach(opt => opt.classList.remove('selected'));
+                el.classList.add('selected');
             });
         });
+    }
+
+    function updateQuizNavigation() {
+        questionCounter.textContent = `${currentQuestionIndex + 1} / ${currentQuizData.length}`;
+        prevQuestionBtn.classList.toggle('hidden', currentQuestionIndex === 0);
+        nextQuestionBtn.classList.toggle('hidden', currentQuestionIndex === currentQuizData.length - 1);
+        submitQuizBtn.classList.toggle('hidden', currentQuestionIndex !== currentQuizData.length - 1);
+    }
+
+    prevQuestionBtn.addEventListener('click', () => {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            displayQuestion();
+        }
     });
+
+    nextQuestionBtn.addEventListener('click', () => {
+        if (currentQuestionIndex < currentQuizData.length - 1) {
+            currentQuestionIndex++;
+            displayQuestion();
+        }
+    });
+    
+    updateFileDropdown();
 });

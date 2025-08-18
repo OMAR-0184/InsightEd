@@ -3,84 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InsightEd</title>
+    <title>InsightEd - AI PDF Quiz & Summary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <header>
-        <h1>InsightEd</h1>
-        <nav>
-            <a href="#home">Home</a>
-            <a href="#upload">Upload PDF</a>
-            <a href="#generate">Generate</a>
-            <a href="#quiz-section">Quiz</a>
+<body class="bg-gray-900 text-gray-200 font-sans">
+    
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div id="loading" class="w-48 h-48"></div>
+    </div>
+
+    <header class="bg-gray-800 shadow-md shadow-blue-500/20">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-white">InsightEd</h1>
+            <div>
+                <a href="#home" class="text-gray-300 hover:text-blue-400 mx-3">Home</a>
+                <a href="#features" class="text-gray-300 hover:text-blue-400 mx-3">Features</a>
+                <a href="#app" class="text-gray-300 hover:text-blue-400 mx-3">App</a>
+            </div>
         </nav>
     </header>
 
     <main>
-        <section id="home" class="hero-section">
-            <h2>Welcome to InsightEd!</h2>
-            <p>Your intelligent learning companion. InsightEd helps you quickly grasp complex information by summarizing your PDF documents and testing your knowledge with custom-generated quizzes.</p>
-            <p>Upload your study materials, get instant summaries, and challenge yourself with interactive quizzes tailored to your content. Master your subjects with ease!</p>
-        </section>
-
-        <section id="upload" class="section-container">
-            <h2>Upload Your PDF</h2>
-            <div class="upload-area">
-                <input type="file" id="pdfUpload" accept=".pdf">
-                <button id="uploadButton">Upload PDF</button>
-            </div>
-            <p id="uploadStatus" class="status-message"></p>
-        </section>
-
-        <section id="generate" class="section-container">
-            <h2>Generate Summary or Quiz</h2>
-            <div class="generate-options">
-                <label for="uploadedFilename">Select Uploaded File:</label>
-                <select id="uploadedFilename">
-                    </select>
-                
-                <button id="summarizeButton">Generate Summary</button>
-                <div id="summaryResult" class="result-box hidden">
-                    <h3>Summary:</h3>
-                    <div id="summaryContent" class="content-display"></div>
-                </div>
-
-                <hr>
-
-                <h3>Assess Yourself</h3>
-                <label for="numQuestions">Number of Questions:</label>
-                <input type="number" id="numQuestions" min="1" value="5">
-                <button id="generateQuizButton">Generate Quiz</button>
-                <p id="quizGenerationStatus" class="status-message"></p>
+        <section id="home" class="py-20 text-white text-center hero-section">
+            <div class="container mx-auto px-6">
+                <h2 class="text-5xl font-bold mb-4">Welcome to InsightEd</h2>
+                <p class="text-xl mb-8 text-gray-300">Your intelligent learning companion. Effortlessly summarize PDFs and create quizzes.</p>
+                <a href="#app" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-full hover:bg-blue-700 transition-colors">Get Started</a>
             </div>
         </section>
 
-        <section id="quiz-section" class="section-container hidden">
-            <h2>Take the Quiz!</h2>
-            <div id="quizContainer">
+        <section id="features" class="py-20">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-4xl font-bold text-white mb-12">Why Choose InsightEd?</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-gray-800 p-8 rounded-lg shadow-lg hover:shadow-blue-500/50 transition-shadow">
+                        <img src="https://images.pexels.com/photos/1181271/pexels-photo-1181271.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Summarization" class="w-24 h-24 mx-auto mb-6 rounded-full object-cover border-2 border-blue-500">
+                        <h3 class="text-2xl font-bold mb-4 text-white">Instant Summaries</h3>
+                        <p class="text-gray-400">Get key insights from your documents in seconds.</p>
+                    </div>
+                    <div class="bg-gray-800 p-8 rounded-lg shadow-lg hover:shadow-purple-500/50 transition-shadow">
+                        <img src="https://images.pexels.com/photos/5428830/pexels-photo-5428830.jpeg" alt="Quiz" class="w-24 h-24 mx-auto mb-6 rounded-full object-cover border-2 border-purple-500">
+                        <h3 class="text-2xl font-bold mb-4 text-white">Custom Quizzes</h3>
+                        <p class="text-gray-400">Test your knowledge with AI-generated quizzes.</p>
+                    </div>
+                    <div class="bg-gray-800 p-8 rounded-lg shadow-lg hover:shadow-green-500/50 transition-shadow">
+                        <img src="https://images.pexels.com/photos/4624910/pexels-photo-4624910.jpeg" alt="Easy to Use" class="w-24 h-24 mx-auto mb-6 rounded-full object-cover border-2 border-green-500">
+                        <h3 class="text-2xl font-bold mb-4 text-white">Easy to Use</h3>
+                        <p class="text-gray-400">A simple and intuitive interface for everyone.</p>
+                    </div>
                 </div>
-            <button id="submitQuizButton" class="hidden">Submit Quiz</button>
-            <button id="startNewQuizButton" class="hidden">Start New Quiz</button>
+            </div>
         </section>
 
-        <section id="quiz-analysis" class="section-container hidden">
-            <h2>Quiz Analysis</h2>
-            <div id="analysisResult">
-                <h3>Your Score: <span id="scoreDisplay"></span></h3>
-                <div id="correctAnswers">
-                    <h4>Correct Answers:</h4>
-                    <ul id="correctList"></ul>
-                </div>
-                <div id="incorrectAnswers">
-                    <h4>Incorrect Answers:</h4>
-                    <ul id="incorrectList"></ul>
+        <section id="app" class="py-20 bg-gray-800/50">
+            <div class="container mx-auto px-6">
+                <div class="bg-gray-800 p-8 rounded-lg shadow-2xl">
+                    <h2 class="text-3xl font-bold text-center text-white mb-8">Try InsightEd Now</h2>
+                    <div class="text-center mb-6">
+                        <input type="file" id="pdfUpload" accept=".pdf" class="hidden">
+                        <button id="uploadButton" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-full hover:bg-blue-700 transition-colors">Upload PDF</button>
+                        <p id="uploadStatus" class="mt-4 text-gray-400"></p>
+                    </div>
+
+                    <div id="controls" class="hidden text-center">
+                        <select id="uploadedFilename" class="p-2 border border-gray-600 bg-gray-700 text-white rounded-md"></select>
+                        <div class="mt-6">
+                            <button id="summarizeButton" class="bg-green-600 text-white font-bold py-3 px-6 rounded-full hover:bg-green-700 transition-colors">Generate Summary</button>
+                            <div class="inline-block ml-4">
+                                <input type="number" id="numQuestions" min="1" value="5" class="p-2 border border-gray-600 bg-gray-700 text-white rounded-md w-24">
+                                <button id="generateQuizButton" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-full hover:bg-purple-700 transition-colors">Generate Quiz</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="summaryResult" class="hidden mt-8 p-6 bg-gray-900 rounded-lg">
+                        <h3 class="text-2xl font-bold text-white mb-4">Summary</h3>
+                        <div id="summaryContent" class="text-gray-300"></div>
+                    </div>
                 </div>
             </div>
         </section>
     </main>
 
-    <footer>
+    <div id="quiz-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+        <div id="quiz-modal-content" class="bg-gray-800 rounded-lg shadow-2xl p-8 max-w-2xl w-full flex flex-col">
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h2 id="quiz-modal-title" class="text-2xl font-bold text-white">Quiz Time!</h2>
+                <div id="timer" class="text-2xl font-bold text-blue-400"></div>
+            </div>
+            
+            <div class="overflow-y-auto">
+                <div id="quiz-container"></div>
+                <div id="quiz-results" class="hidden text-center">
+                    <div class="w-full max-w-xs mx-auto h-64">
+                        <canvas id="resultsChart"></canvas>
+                    </div>
+                    <p class="text-2xl mt-4">Your Score: <span id="score" class="font-bold"></span></p>
+                    <p class="text-lg mt-2">Time Taken: <span id="timeTaken" class="font-bold"></span></p>
+                    <div id="quiz-analysis-details" class="mt-6 text-left"></div>
+                    <button id="close-quiz" class="mt-6 bg-red-600 text-white font-bold py-2 px-4 rounded-full hover:bg-red-700 transition-colors">Close</button>
+                </div>
+            </div>
+
+             <div id="quiz-navigation" class="mt-6 flex justify-between items-center flex-shrink-0">
+                <button id="prev-question" class="bg-gray-600 text-gray-200 font-bold py-2 px-4 rounded-full hover:bg-gray-700 transition-colors">Previous</button>
+                <p id="question-counter" class="text-gray-400"></p>
+                <button id="next-question" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-full hover:bg-blue-700 transition-colors">Next</button>
+                <button id="submit-quiz" class="bg-green-600 text-white font-bold py-2 px-4 rounded-full hover:bg-green-700 transition-colors hidden">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-gray-800 text-white text-center py-6">
         <p>&copy; 2025 InsightEd. All rights reserved.</p>
     </footer>
 

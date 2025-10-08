@@ -5,6 +5,9 @@ Frontend:  https://insight-ed-pink.vercel.app
 
 FastAPI docs :  https://insighted.onrender.com/docs
 
+Android App Repo: https://github.com/OMAR-0184/InsightEd-app
+
+
 
 
 ## Table of Contents

@@ -1,36 +1,68 @@
+:root {
+    --accent-blue: #3b82f6;
+    --dark-bg: #000000;
+}
+
 body {
     font-family: 'Poppins', sans-serif;
-    background-color: #111827; 
-    background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png');
-    color: #d1d5db; 
+    background-color: var(--dark-bg);
+    color: #f8fafc;
+    overflow-x: hidden;
 }
 
-.hero-section {
-    background: linear-gradient(rgba(17, 24, 39, 0.8), rgba(17, 24, 39, 0.8)), url('https://images.pexels.com/photos/347141/pexels-photo-347141.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2') no-repeat center center/cover;
+#bg-animation {
+    background: radial-gradient(circle at center, #050505 0%, #000000 100%);
 }
 
-#quiz-modal-content {
-    max-height: 90vh; 
-
+.page-transition {
+    animation: fadeIn 0.4s ease-out forwards;
 }
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 .quiz-option {
     display: block;
-    padding: 1rem;
-    border: 2px solid #4b5563; 
-    border-radius: 0.5rem;
-    margin-bottom: 0.75rem;
+    padding: 1.25rem;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 1.25rem;
+    margin-bottom: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    background-color: #374151; 
+    transition: all 0.2s ease;
+    background-color: #0A0A0A;
 }
 
 .quiz-option:hover {
-    background-color: #4b5563; 
-    border-color: #60a5fa; 
+    border-color: rgba(255,255,255,0.2);
+    transform: translateX(4px);
 }
 
 .quiz-option.selected {
-    background-color: #1e40af; 
-    border-color: #3b82f6;
+    background: rgba(59,130,246,0.1);
+    border-color: var(--accent-blue);
     color: white;
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 3px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+
+.expandable-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, padding 0.3s ease;
+}
+
+.expandable-card.active .expandable-content {
+    max-height: 1500px;
+    padding-top: 1rem;
+}
+
+.expandable-card .chevron {
+    transition: transform 0.3s ease;
+}
+
+.expandable-card.active .chevron {
+    transform: rotate(180deg);
 }

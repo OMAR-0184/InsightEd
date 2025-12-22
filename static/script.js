@@ -1,18 +1,68 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('bg-animation');
+    const ctx = canvas.getContext('2d');
+    let width, height, stars, meteors;
+
+    const initCanvas = () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        stars = [];
+        meteors = [];
+        for (let i = 0; i < 200; i++) {
+            stars.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                size: Math.random() * 1.5,
+                opacity: Math.random()
+            });
+        }
+    };
+
+    const createMeteor = () => {
+        meteors.push({
+            x: Math.random() * width,
+            y: Math.random() * (height / 2),
+            len: Math.random() * 80 + 20,
+            speed: Math.random() * 10 + 5,
+            opacity: 1
+        });
+    };
+
+    const animate = () => {
+        ctx.clearRect(0, 0, width, height);
+        stars.forEach(s => {
+            ctx.fillStyle = `rgba(255, 255, 255, ${s.opacity})`;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+            ctx.fill();
+            s.opacity += (Math.random() - 0.5) * 0.05;
+            if (s.opacity < 0) s.opacity = 0;
+            if (s.opacity > 1) s.opacity = 1;
+        });
+        meteors.forEach((m, i) => {
+            const gradient = ctx.createLinearGradient(m.x, m.y, m.x - m.len, m.y - m.len);
+            gradient.addColorStop(0, `rgba(255, 255, 255, ${m.opacity})`);
+            gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(m.x, m.y);
+            ctx.lineTo(m.x - m.len, m.y - m.len);
+            ctx.stroke();
+            m.x += m.speed;
+            m.y += m.speed;
+            m.opacity -= 0.01;
+            if (m.opacity <= 0) meteors.splice(i, 1);
+        });
+        if (Math.random() < 0.02) createMeteor();
+        requestAnimationFrame(animate);
+    };
+
+    window.addEventListener('resize', initCanvas);
+    initCanvas();
+    animate();
+
     const API_BASE_URL = 'https://insighted.onrender.com';
-
-
-    const loadingOverlay = document.getElementById('loading-overlay');
-    
-
-    const loadingAnimation = lottie.loadAnimation({
-        container: document.getElementById('loading'),
-        renderer: 'svg',
-        loop: true,
-        autoplay: false,
-        path: 'https://lottie.host/e09d1185-d667-4257-8f24-00cd6d2a5db0/T05HDpjup5.json' 
-    });
-
     const uploadInput = document.getElementById('pdfUpload');
     const uploadButton = document.getElementById('uploadButton');
     const uploadStatus = document.getElementById('uploadStatus');
@@ -20,338 +70,330 @@ document.addEventListener('DOMContentLoaded', () => {
     const summarizeButton = document.getElementById('summarizeButton');
     const summaryResult = document.getElementById('summaryResult');
     const summaryContent = document.getElementById('summaryContent');
+    const saveSummaryBtn = document.getElementById('save-summary-btn');
     const numQuestionsInput = document.getElementById('numQuestions');
     const generateQuizButton = document.getElementById('generateQuizButton');
     const controls = document.getElementById('controls');
-
-    // Quiz Modal Elements
+    const workspacePage = document.getElementById('workspace-page');
+    const bookmarksPage = document.getElementById('bookmarks-page');
+    const bookmarksList = document.getElementById('bookmarks-list');
+    const savedSummariesList = document.getElementById('saved-summaries-list');
+    const viewWorkspace = document.getElementById('view-workspace');
+    const viewBookmarks = document.getElementById('view-bookmarks');
+    const navLogo = document.getElementById('nav-logo');
     const quizModal = document.getElementById('quiz-modal');
     const quizModalTitle = document.getElementById('quiz-modal-title');
+    const quizFileNameDisplay = document.getElementById('quiz-file-name');
     const quizContainer = document.getElementById('quiz-container');
     const prevQuestionBtn = document.getElementById('prev-question');
     const nextQuestionBtn = document.getElementById('next-question');
     const submitQuizBtn = document.getElementById('submit-quiz');
     const questionCounter = document.getElementById('question-counter');
     const closeQuizBtn = document.getElementById('close-quiz');
+    const exitQuizBtn = document.getElementById('exit-quiz');
+    const bookmarkBtn = document.getElementById('bookmark-question');
     const quizResults = document.getElementById('quiz-results');
     const scoreDisplay = document.getElementById('score');
     const timerElement = document.getElementById('timer');
     const timeTakenElement = document.getElementById('timeTaken');
     const quizAnalysisDetails = document.getElementById('quiz-analysis-details');
 
-    // Quiz State
     let currentQuizData = [];
     let userAnswers = [];
     let currentQuestionIndex = 0;
     let quizTimer;
     let startTime;
     let resultsChart;
+    let lastGeneratedSummary = "";
+
+    const setBtnLoading = (btn, isLoading) => {
+        const spinner = btn.querySelector('.spinner');
+        const text = btn.querySelector('.btn-text');
+        btn.disabled = isLoading;
+        if (isLoading) {
+            spinner.classList.remove('hidden');
+            text.classList.add('opacity-0');
+        } else {
+            spinner.classList.add('hidden');
+            text.classList.remove('opacity-0');
+        }
+    };
+
+    const switchPage = (page) => {
+        if (page === 'bookmarks') {
+            workspacePage.classList.add('hidden');
+            bookmarksPage.classList.remove('hidden');
+            renderBookmarks();
+            renderSavedSummaries();
+        } else {
+            bookmarksPage.classList.add('hidden');
+            workspacePage.classList.remove('hidden');
+        }
+    };
+
+    viewBookmarks.addEventListener('click', () => switchPage('bookmarks'));
+    viewWorkspace.addEventListener('click', () => switchPage('workspace'));
+    navLogo.addEventListener('click', () => switchPage('workspace'));
+
+    const closeQuizModal = () => { quizModal.classList.add('hidden'); clearInterval(quizTimer); };
 
     uploadButton.addEventListener('click', () => uploadInput.click());
-    
-    uploadInput.addEventListener('change', async () => {
-        const file = uploadInput.files[0];
-        if (!file) return;
+    uploadInput.addEventListener('change', (e) => { if (e.target.files[0]) handleFileUpload(e.target.files[0]); });
 
+    async function handleFileUpload(file) {
         const formData = new FormData();
         formData.append('file', file);
-
-        uploadStatus.textContent = "Uploading...";
-        loadingOverlay.classList.remove('hidden');
-        loadingAnimation.play();
-
+        uploadStatus.textContent = "Processing...";
         try {
-            const response = await fetch(`${API_BASE_URL}/upload/`, {
-                method: 'POST',
-                body: formData
-            });
+            const response = await fetch(`${API_BASE_URL}/upload/`, { method: 'POST', body: formData });
             const result = await response.json();
-
             if (response.ok) {
-                uploadStatus.textContent = `Successfully uploaded ${result.filename}`;
-                let uploadedFiles = JSON.parse(localStorage.getItem('uploadedFiles')) || [];
-                if (!uploadedFiles.includes(result.filename)) {
-                    uploadedFiles.push(result.filename);
-                    localStorage.setItem('uploadedFiles', JSON.stringify(uploadedFiles));
+                uploadStatus.textContent = `Active: ${result.filename}`;
+                let files = JSON.parse(localStorage.getItem('uploadedFiles')) || [];
+                if (!files.includes(result.filename)) {
+                    files.push(result.filename);
+                    localStorage.setItem('uploadedFiles', JSON.stringify(files));
                 }
                 updateFileDropdown();
                 uploadedFilenameSelect.value = result.filename;
                 controls.classList.remove('hidden');
-            } else {
-                uploadStatus.textContent = `Error: ${result.detail || 'Upload failed'}`;
             }
-        } catch (error) {
-            uploadStatus.textContent = `Network error: ${error.message}`;
-        } finally {
-            loadingOverlay.classList.add('hidden');
-            loadingAnimation.stop();
-        }
-    });
+        } catch (e) { uploadStatus.textContent = "Error"; }
+    }
 
     function updateFileDropdown() {
         const files = JSON.parse(localStorage.getItem('uploadedFiles')) || [];
-        uploadedFilenameSelect.innerHTML = '';
-        if (files.length > 0) {
-            files.forEach(filename => {
-                const option = document.createElement('option');
-                option.value = filename;
-                option.textContent = filename;
-                uploadedFilenameSelect.appendChild(option);
-            });
-            controls.classList.remove('hidden');
-        }
+        uploadedFilenameSelect.innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join('');
+        if (files.length > 0) controls.classList.remove('hidden');
     }
 
     summarizeButton.addEventListener('click', async () => {
         const filename = uploadedFilenameSelect.value;
-        if (!filename) return;
-
-        summaryResult.classList.add('hidden'); 
-        summaryContent.innerHTML = ''; 
-        loadingOverlay.classList.remove('hidden');
-        loadingAnimation.play();
-
+        setBtnLoading(summarizeButton, true);
         try {
             const response = await fetch(`${API_BASE_URL}/generate/summary/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ filename })
             });
             const result = await response.json();
-
             if (response.ok) {
-                // First, replace markdown bold with <strong> tags
-                const boldedText = result.summary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                // Then, replace newlines with <br> tags
-                summaryContent.innerHTML = boldedText.replace(/\n/g, '<br>');
-            } else {
-                summaryContent.textContent = `Error: ${result.detail || 'Summary generation failed'}`;
+                lastGeneratedSummary = result.summary;
+                summaryContent.innerHTML = result.summary.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-bold">$1</strong>').replace(/\n/g, '<br>');
+                summaryResult.classList.remove('hidden');
             }
-        } catch (error) {
-            summaryContent.textContent = `Network error: ${error.message}`;
-        } finally {
-            loadingOverlay.classList.add('hidden');
-            loadingAnimation.stop();
-            summaryResult.classList.remove('hidden');
-        }
+        } finally { setBtnLoading(summarizeButton, false); }
+    });
+
+    saveSummaryBtn.addEventListener('click', () => {
+        if (!lastGeneratedSummary) return;
+        let summaries = JSON.parse(localStorage.getItem('savedSummaries')) || [];
+        summaries.unshift({ file: uploadedFilenameSelect.value, content: lastGeneratedSummary, date: new Date().toLocaleDateString() });
+        localStorage.setItem('savedSummaries', JSON.stringify(summaries));
+        alert("Summary saved.");
     });
 
     generateQuizButton.addEventListener('click', async () => {
         const filename = uploadedFilenameSelect.value;
         const num = parseInt(numQuestionsInput.value, 10);
-        if (!filename || isNaN(num) || num <= 0) return;
-
-        loadingOverlay.classList.remove('hidden');
-        loadingAnimation.play();
-
+        setBtnLoading(generateQuizButton, true);
         try {
             const response = await fetch(`${API_BASE_URL}/generate/quiz/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ filename, num })
             });
             const result = await response.json();
-
-            if (response.ok && result.questions && result.questions.length > 0) {
+            if (response.ok && result.questions.length > 0) {
                 currentQuizData = result.questions;
                 userAnswers = new Array(currentQuizData.length).fill(null);
+                quizFileNameDisplay.textContent = filename;
                 startQuiz();
-            } else {
-                alert('Failed to generate quiz. Please try again.');
             }
-        } catch (error) {
-            alert(`Network error: ${error.message}`);
-        } finally {
-            loadingOverlay.classList.add('hidden');
-            loadingAnimation.stop();
-        }
+        } finally { setBtnLoading(generateQuizButton, false); }
     });
 
     function startQuiz() {
         currentQuestionIndex = 0;
-        quizModalTitle.textContent = "Quiz Time!";
-        timerElement.classList.remove('hidden');
+        quizModalTitle.textContent = "Intelligence Test";
         quizResults.classList.add('hidden');
         quizContainer.classList.remove('hidden');
         document.getElementById('quiz-navigation').classList.remove('hidden');
         quizModal.classList.remove('hidden');
         displayQuestion();
-        
-        const quizDuration = currentQuizData.length * 120;
         startTime = new Date();
-        startTimer(quizDuration);
+        startTimer(currentQuizData.length * 120);
     }
     
     function startTimer(duration) {
-        let timer = duration, minutes, seconds;
+        let timer = duration;
         clearInterval(quizTimer);
-
         quizTimer = setInterval(() => {
-            minutes = parseInt(timer / 60, 10);
-            seconds = parseInt(timer % 60, 10);
-
-            minutes = minutes < 10 ? "0" + minutes : minutes;
-            seconds = seconds < 10 ? "0" + seconds : seconds;
-
-            timerElement.textContent = minutes + ":" + seconds;
-
-            if (--timer < 0) {
-                clearInterval(quizTimer);
-                alert("Time's up!");
-                submitQuiz();
-            }
+            let m = Math.floor(timer/60), s = timer%60;
+            timerElement.textContent = `${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
+            if (--timer < 0) submitQuiz();
         }, 1000);
     }
     
     function submitQuiz() {
         clearInterval(quizTimer);
-        const endTime = new Date();
-        const timeDiffSeconds = Math.round((endTime - startTime) / 1000);
-        const minutes = Math.floor(timeDiffSeconds / 60);
-        const seconds = timeDiffSeconds % 60;
-        timeTakenElement.textContent = `${minutes}m ${seconds}s`;
-
-        let score = 0;
-        userAnswers.forEach((answer, index) => {
-            if (answer === currentQuizData[index].Answer) {
-                score++;
-            }
-        });
-
+        const timeDiff = Math.round((new Date() - startTime) / 1000);
+        timeTakenElement.textContent = `${Math.floor(timeDiff / 60)}m ${timeDiff % 60}s`;
+        let score = userAnswers.reduce((acc, ans, i) => acc + (ans === currentQuizData[i].Answer ? 1 : 0), 0);
         scoreDisplay.textContent = `${score} / ${currentQuizData.length}`;
-        quizModalTitle.textContent = "Quiz Results";
-        timerElement.classList.add('hidden');
+        quizModalTitle.textContent = "Analysis Ready";
         quizContainer.classList.add('hidden');
         document.getElementById('quiz-navigation').classList.add('hidden');
         quizResults.classList.remove('hidden');
-        
         displayResultsChart(score, currentQuizData.length);
-        displayAnswerAnalysis();
+        renderAnalysis();
     }
 
-    function displayAnswerAnalysis() {
-        quizAnalysisDetails.innerHTML = '';
-        let analysisHTML = '<h3 class="text-2xl font-bold mb-4 mt-6 text-white">Answer Breakdown</h3>';
-
-        currentQuizData.forEach((question, index) => {
-            const userAnswer = userAnswers[index] || "Not Answered";
-            const isCorrect = userAnswer === question.Answer;
-            
-            analysisHTML += `
-                <div class="p-4 mb-4 rounded-lg ${isCorrect ? 'bg-green-300' : 'bg-red-300'}">
-                    <p class="font-bold text-black">${index + 1}. ${question.Question}</p>
-                    <p class="text-gray-800">Your Answer: <span class="font-semibold ${isCorrect ? 'text-green-800' : 'text-red-800'}">${userAnswer}</span></p>
-                    <p class="text-gray-800">Correct Answer: <span class="font-semibold text-green-800">${question.Answer}</span></p>
-                    <p class="mt-2 text-sm text-gray-700"><em>${question.Description}</em></p>
-                </div>
-            `;
-        });
-        
-        quizAnalysisDetails.innerHTML = analysisHTML;
+    function renderAnalysis() {
+        quizAnalysisDetails.innerHTML = currentQuizData.map((q, i) => {
+            const isCorrect = userAnswers[i] === q.Answer;
+            return `
+                <div class="p-6 rounded-2xl border ${isCorrect ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}">
+                    <p class="font-bold text-white mb-2">${i + 1}. ${q.Question}</p>
+                    <div class="flex items-center space-x-2 text-sm mb-3">
+                        <span class="text-gray-500">Selection:</span>
+                        <span class="${isCorrect ? 'text-green-400' : 'text-red-400'} font-bold">${userAnswers[i] || 'None'}</span>
+                    </div>
+                    ${!isCorrect ? `<div class="text-sm text-green-400 font-bold mb-3">Correct Key: ${q.Answer}</div>` : ''}
+                    <div class="pt-3 border-t border-white/5 text-xs text-gray-400 leading-relaxed italic">
+                        <span class="text-white not-italic font-bold mr-1">Explanation:</span> ${q.Description}
+                    </div>
+                </div>`;
+        }).join('');
     }
-    
+
     function displayResultsChart(correct, total) {
-        const incorrect = total - correct;
         const ctx = document.getElementById('resultsChart').getContext('2d');
-        
-        if (resultsChart) {
-            resultsChart.destroy();
-        }
-
-        Chart.defaults.color = '#d1d5db'; 
-
+        if (resultsChart) resultsChart.destroy();
         resultsChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['Correct', 'Incorrect'],
-                datasets: [{
-                    data: [correct, incorrect],
-                    backgroundColor: [
-                        'rgba(16, 185, 129, 0.8)',
-                        'rgba(239, 68, 68, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgba(16, 185, 129, 1)',
-                        'rgba(239, 68, 68, 1)'
-                    ],
-                    borderWidth: 1
-                }]
+                datasets: [{ data: [correct, total - correct], backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: {
-                    animateScale: true,
-                    animateRotate: true
-                },
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            color: '#d1d5db'
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'Quiz Performance',
-                        color: '#ffffff'
-                    }
-                }
-            }
+            options: { cutout: '85%', plugins: { legend: { display: false } } }
         });
     }
 
-    submitQuizBtn.addEventListener('click', submitQuiz);
-
-    closeQuizBtn.addEventListener('click', () => {
-        quizModal.classList.add('hidden');
-        clearInterval(quizTimer);
-    });
-
     function displayQuestion() {
-        const question = currentQuizData[currentQuestionIndex];
+        const q = currentQuizData[currentQuestionIndex];
         quizContainer.innerHTML = `
-            <h3 class="text-xl font-semibold mb-4 text-white">${question.Question}</h3>
-            <div>
-                ${question.Options.map(option => `
-                    <label class="quiz-option ${userAnswers[currentQuestionIndex] === option ? 'selected' : ''}">
-                        <input type="radio" name="option" value="${option}" class="hidden">
-                        <span>${option}</span>
+            <h3 class="text-xl font-bold mb-8 text-white leading-snug">${q.Question}</h3>
+            <div class="space-y-4">
+                ${q.Options.map(opt => `
+                    <label class="quiz-option ${userAnswers[currentQuestionIndex] === opt ? 'selected' : ''}">
+                        <input type="radio" name="option" value="${opt}" class="hidden">
+                        <span class="text-sm font-medium">${opt}</span>
                     </label>
                 `).join('')}
-            </div>
-        `;
-        updateQuizNavigation();
-
+            </div>`;
+        questionCounter.textContent = `Challenge ${currentQuestionIndex + 1} of ${currentQuizData.length}`;
+        prevQuestionBtn.classList.toggle('invisible', currentQuestionIndex === 0);
+        nextQuestionBtn.classList.toggle('hidden', currentQuestionIndex === currentQuizData.length - 1);
+        submitQuizBtn.classList.toggle('hidden', currentQuestionIndex !== currentQuizData.length - 1);
+        updateBookmarkUI();
         document.querySelectorAll('.quiz-option').forEach(el => {
             el.addEventListener('click', () => {
                 userAnswers[currentQuestionIndex] = el.querySelector('input').value;
-                document.querySelectorAll('.quiz-option').forEach(opt => opt.classList.remove('selected'));
+                document.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('selected'));
                 el.classList.add('selected');
             });
         });
     }
 
-    function updateQuizNavigation() {
-        questionCounter.textContent = `${currentQuestionIndex + 1} / ${currentQuizData.length}`;
-        prevQuestionBtn.classList.toggle('hidden', currentQuestionIndex === 0);
-        nextQuestionBtn.classList.toggle('hidden', currentQuestionIndex === currentQuizData.length - 1);
-        submitQuizBtn.classList.toggle('hidden', currentQuestionIndex !== currentQuizData.length - 1);
+    function toggleBookmark() {
+        const currentQ = currentQuizData[currentQuestionIndex];
+        let marks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+        const exists = marks.find(b => b.Question === currentQ.Question);
+        if (exists) {
+            marks = marks.filter(b => b.Question !== currentQ.Question);
+        } else {
+            marks.push({ ...currentQ, date: new Date().toLocaleDateString(), file: uploadedFilenameSelect.value });
+        }
+        localStorage.setItem('bookmarks', JSON.stringify(marks));
+        updateBookmarkUI();
     }
 
-    prevQuestionBtn.addEventListener('click', () => {
-        if (currentQuestionIndex > 0) {
-            currentQuestionIndex--;
-            displayQuestion();
-        }
-    });
+    function updateBookmarkUI() {
+        const currentQ = currentQuizData[currentQuestionIndex];
+        const marks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+        const exists = marks.find(b => b.Question === currentQ.Question);
+        bookmarkBtn.querySelector('svg').setAttribute('fill', exists ? 'currentColor' : 'none');
+    }
 
-    nextQuestionBtn.addEventListener('click', () => {
-        if (currentQuestionIndex < currentQuizData.length - 1) {
-            currentQuestionIndex++;
-            displayQuestion();
+    function renderBookmarks() {
+        const marks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+        if (marks.length === 0) {
+            bookmarksList.innerHTML = '<p class="text-gray-600 italic">No bookmarked challenges found.</p>';
+            return;
         }
-    });
-    
+        bookmarksList.innerHTML = marks.map((b, i) => `
+            <div class="expandable-card bg-[#0A0A0A] p-6 rounded-2xl border border-white/5 transition-all">
+                <div class="flex justify-between items-center cursor-pointer" onclick="this.parentElement.classList.toggle('active')">
+                    <div class="flex-1">
+                        <span class="text-[10px] font-black text-blue-500 uppercase tracking-widest">${b.file}</span>
+                        <p class="text-white font-bold mt-1 line-clamp-1">${b.Question}</p>
+                    </div>
+                    <svg class="chevron h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+                <div class="expandable-content border-t border-white/5 mt-4">
+                    <p class="text-white text-sm font-medium mb-4 leading-relaxed">${b.Question}</p>
+                    <div class="bg-blue-500/5 border border-blue-500/10 p-4 rounded-xl mb-4">
+                        <p class="text-blue-400 text-[10px] font-black uppercase mb-2 tracking-widest">Correct Solution</p>
+                        <p class="text-white text-sm font-bold mb-3">${b.Answer}</p>
+                        <div class="pt-3 border-t border-white/5 text-xs text-gray-400 leading-relaxed italic">
+                            <span class="text-white not-italic font-bold mr-1">Explanation:</span> ${b.Description}
+                        </div>
+                    </div>
+                    <button onclick="deleteBookmark('${b.Question.replace(/'/g, "\\'")}')" class="text-red-500 text-[10px] font-bold uppercase tracking-widest hover:underline">Remove Item</button>
+                </div>
+            </div>`).join('');
+    }
+
+    function renderSavedSummaries() {
+        const summaries = JSON.parse(localStorage.getItem('savedSummaries')) || [];
+        if (summaries.length === 0) {
+            savedSummariesList.innerHTML = '<p class="text-gray-600 italic">No intelligence summaries cached.</p>';
+            return;
+        }
+        savedSummariesList.innerHTML = summaries.map((s, i) => `
+            <div class="expandable-card bg-[#0A0A0A] p-6 rounded-2xl border border-white/5 transition-all">
+                <div class="flex justify-between items-center cursor-pointer" onclick="this.parentElement.classList.toggle('active')">
+                    <div class="flex-1">
+                        <span class="text-[10px] font-black text-cyan-500 uppercase tracking-widest">${s.file}</span>
+                        <p class="text-white font-bold mt-1 line-clamp-1">Executive Summary — ${s.date}</p>
+                    </div>
+                    <svg class="chevron h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+                <div class="expandable-content border-t border-white/5 mt-4">
+                    <div class="text-xs text-gray-400 leading-relaxed font-light">${s.content.replace(/\*\*/g, '').replace(/\n/g, '<br>')}</div>
+                    <button onclick="deleteSummary(${i})" class="text-red-500 text-[10px] font-bold uppercase tracking-widest mt-6 hover:underline">Purge Summary</button>
+                </div>
+            </div>`).join('');
+    }
+
+    window.deleteBookmark = (text) => {
+        let marks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+        marks = marks.filter(b => b.Question !== text);
+        localStorage.setItem('bookmarks', JSON.stringify(marks));
+        renderBookmarks();
+    };
+
+    window.deleteSummary = (index) => {
+        let summaries = JSON.parse(localStorage.getItem('savedSummaries')) || [];
+        summaries.splice(index, 1);
+        localStorage.setItem('savedSummaries', JSON.stringify(summaries));
+        renderSavedSummaries();
+    };
+
+    bookmarkBtn.addEventListener('click', toggleBookmark);
+    submitQuizBtn.addEventListener('click', submitQuiz);
+    prevQuestionBtn.addEventListener('click', () => { if (currentQuestionIndex > 0) { currentQuestionIndex--; displayQuestion(); } });
+    nextQuestionBtn.addEventListener('click', () => { if (currentQuestionIndex < currentQuizData.length - 1) { currentQuestionIndex++; displayQuestion(); } });
+    closeQuizBtn.addEventListener('click', closeQuizModal);
+    exitQuizBtn.addEventListener('click', closeQuizModal);
     updateFileDropdown();
 });

@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="flex justify-between items-center cursor-pointer" onclick="this.parentElement.classList.toggle('active')">
                     <div class="flex-1">
                         <span class="text-[10px] font-black text-cyan-500 uppercase tracking-widest">${s.file}</span>
-                        <p class="text-white font-bold mt-1 line-clamp-1">Executive Summary — ${s.date}</p>
+                        <p class="text-white font-bold mt-1 line-clamp-1"> Summary — ${s.date}</p>
                     </div>
                     <svg class="chevron h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                 </div>

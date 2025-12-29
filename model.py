@@ -19,7 +19,7 @@ if not GOOGLE_API_KEY:
 
 
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.7, google_api_key=GOOGLE_API_KEY)
-embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=GOOGLE_API_KEY)
+
 
 
 def get_document_chunks(docs):
@@ -27,9 +27,6 @@ def get_document_chunks(docs):
     chunks = text_splitter.split_documents(docs)
     return chunks
 
-def get_vector_store(chunks):
-    vector_store = FAISS.from_documents(chunks, embeddings)
-    return vector_store
 
 
 def summarize(loader):

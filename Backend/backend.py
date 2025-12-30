@@ -2,8 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 import os
 from langchain_community.document_loaders import PyPDFLoader
-from model import quiz, summarize # Ensure these are correctly imported
-from fastapi.staticfiles import StaticFiles
+from InsightEd.Backend.model import quiz, summarize 
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -15,29 +14,27 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 origins = [
-    "*"  # This wildcard allows all origins
+    "https://insight-ed-pink.vercel.app"  
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,       # Set to ["*"] to allow all origins
-    allow_credentials=True,      # Allow cookies/authorization headers to be sent
-    allow_methods=["*"],         # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"],         # Allow all headers
+    allow_origins=origins,       
+    allow_credentials=True,      
+    allow_methods=["*"],         
+    allow_headers=["*"],         
 )
-# --- END CORS Configuration ---
 
-# Mount the static files directory
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# --- Define Pydantic Models for Request Bodies ---
+
+
 class GenerateSummaryRequest(BaseModel):
     filename: str
 
 class GenerateQuizRequest(BaseModel):
     filename: str
     num: int
-# --- END Pydantic Models ---
+
 
 @app.get("/")
 def read_root():
@@ -67,7 +64,7 @@ async def generate_summary_endpoint(request: GenerateSummaryRequest):
 
 
 @app.post("/generate/quiz/") 
-async def post_quiz_results(request: GenerateQuizRequest): # Changed name to reflect posting results
+async def post_quiz_results(request: GenerateQuizRequest): 
     file_path = os.path.join(UPLOAD_DIR, request.filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found.")

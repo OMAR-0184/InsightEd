@@ -4,16 +4,15 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.messages import AIMessage
-from langchain.chains.summarize import load_summarize_chain
+from langchain_classic.chains.summarize import load_summarize_chain
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings 
 
 
 load_dotenv()
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-
+GOOGLE_API_KEY = "AIzaSyCyAb4Djc8yuYdhJWa4Z01G5pDE0-URu4M"
 if not GOOGLE_API_KEY:
     raise ValueError("GOOGLE_API_KEY not found in environment variables. Please set it in a .env file.")
 
@@ -21,12 +20,10 @@ if not GOOGLE_API_KEY:
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.7, google_api_key=GOOGLE_API_KEY)
 
 
-
 def get_document_chunks(docs):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=400)
     chunks = text_splitter.split_documents(docs)
     return chunks
-
 
 
 def summarize(loader):
@@ -68,6 +65,7 @@ def summarize(loader):
     combine_prompt = PromptTemplate(template=combine_prompt_template, input_variables=["text"])
 
     try:
+        # Using the chain from langchain_classic
         summary_chain = load_summarize_chain(
             llm,
             chain_type="map_reduce",

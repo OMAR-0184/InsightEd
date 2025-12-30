@@ -12,7 +12,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 load_dotenv()
-GOOGLE_API_KEY = "AIzaSyCyAb4Djc8yuYdhJWa4Z01G5pDE0-URu4M"
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     raise ValueError("GOOGLE_API_KEY not found in environment variables. Please set it in a .env file.")
 
